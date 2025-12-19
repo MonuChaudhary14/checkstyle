@@ -88,6 +88,7 @@ public class SwitchRuleHandler extends AbstractExpressionHandler {
     @Override
     public void checkIndentation() {
         checkCase();
+        checkBlockStartsOnNewLineAfterLeftCurly();
     }
 
     /**
@@ -101,6 +102,34 @@ public class SwitchRuleHandler extends AbstractExpressionHandler {
     private boolean isSameLineAsSwitch(DetailAST node) {
         return node.getType() == TokenTypes.LITERAL_SWITCH
             && TokenUtil.areOnSameLine(getMainAst(), node);
+    }
+
+    private void checkBlockStartsOnNewLineAfterLeftCurly() {
+        if (getMainAst().getType() != TokenTypes.SWITCH_RULE) {
+            return;
+        }
+
+        final DetailAST slist = getMainAst().findFirstToken(TokenTypes.SLIST);
+        if (slist == null) {
+            return;
+        }
+
+        final DetailAST lcurly = slist.findFirstToken(TokenTypes.LCURLY);
+        if (lcurly == null) {
+            return;
+        }
+
+        final DetailAST firstStmt = lcurly.getNextSibling();
+        if (firstStmt == null || firstStmt.getType() == TokenTypes.RCURLY) {
+            return;
+        }
+
+        if (TokenUtil.areOnSameLine(lcurly, firstStmt)) {
+            getIndentCheck().indentationLog(
+                    lcurly,
+                    IndentationCheck.MSG_ERROR
+            );
+        }
     }
 
 }
